@@ -87,7 +87,6 @@ void Chip8::opcode0x_8XY4(){
 		m_v[0xF] = 0;
 	m_v[r_x] += m_v[r_y];
 	m_pc += 2;
-	std::cout << (int)m_v[r_x] << std::endl;
 }
 
 void Chip8::opcode0x_8XY5(){
@@ -102,6 +101,7 @@ void Chip8::opcode0x_8XY6(){
 	const int r_x = (m_opcode & 0x0f00) >> 8;
 	m_v[0xf] = 0x1 & m_v[r_x];
 	m_v[r_x] >>=1;
+	m_pc += 2;
 };
 
 void Chip8::opcode0x_8XY7(){
@@ -116,6 +116,7 @@ void Chip8::opcode0x_8XYE(){
 	const int r_x = (m_opcode & 0x0f00) >> 8;
 	m_v[0xf] = (m_v[r_x] >> 7) & 0x1;
 	m_v[r_x] <<= 1;
+	m_pc += 2;
 };
 
 void Chip8::opcode0x_7XNN(){
