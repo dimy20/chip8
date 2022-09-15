@@ -40,15 +40,16 @@ class Chip8{
 		void opcode0x_CXNN();
 
 		/* key events */
-		void opcode_key_events();
+		void handle_key_events();
 		void opcode0x_EX9E();
 		void opcode0x_EXA1();
 
 		void opcode0x_6XNN(); // Sets VX to NN.
 		void do_nothing();
-		void arithmetic_forward();
+		void handle_arithmetic();
 
 		/*timers*/
+		void handle_misc_and_timers();
 		void opcode_timers();
 		void opcode0x_FX07();
 		void opcode0x_FX15();
@@ -58,7 +59,7 @@ class Chip8{
 
 		void opcode0x_FX04();
 		void opcode0x_FX1E();
-		void opxode0x_FX29();
+		void opcode0x_FX29();
 		void opcode0x_FX33();
 		void opcode0x_FX55();
 		void opcode0x_FX65();
@@ -76,6 +77,8 @@ class Chip8{
 		unsigned char  m_key[KEY_PAD_SIZE]; // key pad // 0x0 - 0xf
 		std::unordered_map<int, void (Chip8::*)(void)> m_global_table;
 		std::unordered_map<int, void (Chip8::*)(void)> m_arithmetic_table;
+		std::unordered_map<int, void (Chip8::*)(void)> m_timers_table;
+		std::unordered_map<int, void (Chip8::*)(void)> m_misc_table;
 };
 
 

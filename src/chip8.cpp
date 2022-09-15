@@ -20,19 +20,34 @@ unsigned char chip8_fontset[80] = {
 	0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
-void Chip8::arithmetic_forward(){
+void Chip8::handle_arithmetic(){
 	const int key = (m_opcode & 0x000f);
 	if(m_arithmetic_table.find(key) != m_arithmetic_table.end()){
 		void (Chip8::* fn)(void) = m_arithmetic_table[key];
 		(this->*fn)();
 	}else{
-		std::cerr << "Uknown arithmetic opcode" << std::endl;
+		std::cerr << "Uknown arithmetic opcode " << key << std::endl;
 	}
 };
-void Chip8::do_nothing(){
 
-};
-
+void Chip8::handle_misc_and_timers(){
+	const int key = (m_opcode & 0xf000) >> 12;
+	if(key == 0x07 || key == 0x15 || key == 0x18){
+		if(m_timers_table.find(key) != m_timers_table.end()){
+			void (Chip8::* fn)(void) = m_timers_table[key];
+			(this->*fn)();
+		}else{
+			std::cerr << "Uknown timer opcode " << key << std::endl;
+		}
+	}else{
+		if(m_misc_table.find(key) != m_misc_table.end()){
+			void (Chip8::* fn)(void) = m_misc_table[key];
+			(this->*fn)();
+		}else{
+			std::cerr << "Unknown misc opcode " << m_opcode << std::endl;
+		}
+	}
+}
 void Chip8::init(){
 	m_pc = 0x2000;
 	m_opcode = 0;
@@ -46,14 +61,25 @@ void Chip8::init(){
 	m_global_table[2] = &Chip8::opcode0x_2NNN;
 	m_global_table[6] = &Chip8::opcode0x_6XNN;
 	m_global_table[7] = &Chip8::opcode0x_7XNN; // todo
-	m_global_table[8] = &Chip8::arithmetic_forward;
+	m_global_table[8] = &Chip8::handle_arithmetic;
 	m_global_table[9] = &Chip8::opcode0x_9XY0;
 	m_global_table[0xb] = &Chip8::opcode0x_BNNN;
 	m_global_table[0xc] = &Chip8::opcode0x_CXNN;
-	m_global_table[0xe] = &Chip8::opcode_key_events;
-	m_global_table[7] = &Chip8::opcode_timers;
+	m_global_table[0xe] = &Chip8::handle_key_events;
+	m_global_table[0xf] = &Chip8::handle_misc_and_timers;
 
-
+	// timers
+	m_timers_table[0x07] = &Chip8::opcode0x_FX07;
+	m_timers_table[0x15] = &Chip8::opcode0x_FX15;
+	m_timers_table[0x18] = &Chip8::opcode0x_FX18;
+	// misc
+	m_misc_table[0x04] = &Chip8::opcode0x_FX04;
+	m_misc_table[0x1E] = &Chip8::opcode0x_FX1E;
+	m_misc_table[0x29] = &Chip8::opcode0x_FX29;
+	m_misc_table[0x33] = &Chip8::opcode0x_FX33;
+	m_misc_table[0x55] = &Chip8::opcode0x_FX55;
+	m_misc_table[0x65] = &Chip8::opcode0x_FX65;
+	// arithmetic
 	m_arithmetic_table[0] = &Chip8::opcode0x_8XY0;
 	m_arithmetic_table[1] = &Chip8::opcode0x_8XY1;
 	m_arithmetic_table[2] = &Chip8::opcode0x_8XY2;
@@ -191,7 +217,7 @@ void Chip8::opcode0x_6XNN(){
 	m_pc += 2;
 };
 
-void Chip8::opcode_key_events(){
+void Chip8::handle_key_events(){
 	if(m_opcode & 0x000f == 0xe) opcode0x_EX9E();
 	if(m_opcode & 0x000f == 0x1) opcode0x_EXA1();
 };
@@ -226,15 +252,6 @@ void Chip8::opcode0x_FX18(){
 	m_pc += 2;
 };
 
-void Chip8::opcode_timers(){
-	switch(m_opcode & 0x00ff){
-		case 0x0007: opcode0x_FX07(); break;
-		case 0x0015: opcode0x_FX15(); break;
-		case 0x0018: opcode0x_FX18(); break;
-		default: std::cerr << "Uknown timer opcode : " << m_opcode << std::endl;
-	}
-};
-
 void Chip8::opcode0x_FX04(){
 	int i = 0;
 	while(1){
@@ -252,7 +269,7 @@ void Chip8::opcode0x_FX1E(){
 	m_pc += 2;
 };
 
-void Chip8::opxode0x_FX29(){
+void Chip8::opcode0x_FX29(){
 	const int r_x = (m_opcode & 0x0f00) >> 8;
 	unsigned char font_offset = 5 * m_v[r_x];
 	m_i = font_offset;
