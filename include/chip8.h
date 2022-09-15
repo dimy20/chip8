@@ -9,6 +9,8 @@
 #define KEY_PAD_SIZE 16
 #define LOAD_ADDRESS 512
 
+
+
 class Chip8{
 	public:
 		Chip8() = default;
@@ -37,14 +39,29 @@ class Chip8{
 		void opcode0x_BNNN();
 		void opcode0x_CXNN();
 
+		/* key events */
 		void opcode_key_events();
 		void opcode0x_EX9E();
 		void opcode0x_EXA1();
 
-		void opcode0x_FX33();
 		void opcode0x_6XNN(); // Sets VX to NN.
 		void do_nothing();
 		void arithmetic_forward();
+
+		/*timers*/
+		void opcode_timers();
+		void opcode0x_FX07();
+		void opcode0x_FX15();
+		void opcode0x_FX18();
+
+		/*misc*/
+
+		void opcode0x_FX04();
+		void opcode0x_FX1E();
+		void opxode0x_FX29();
+		void opcode0x_FX33();
+		void opcode0x_FX55();
+		void opcode0x_FX65();
 	private:
 		unsigned short m_opcode; // 35 opcodes
 		unsigned char  m_memory[MEMORY_SIZE]; // 4k memory in total

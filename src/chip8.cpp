@@ -1,6 +1,25 @@
 #include "chip8.h"
 #include <cassert>
 
+unsigned char chip8_fontset[80] = {
+	0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+	0x20, 0x60, 0x20, 0x20, 0x70, // 1
+	0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+	0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+	0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+	0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+	0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+	0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+	0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+	0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+	0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+	0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+	0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+	0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+	0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+	0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+};
+
 void Chip8::arithmetic_forward(){
 	const int key = (m_opcode & 0x000f);
 	if(m_arithmetic_table.find(key) != m_arithmetic_table.end()){
@@ -20,16 +39,20 @@ void Chip8::init(){
 	m_i = 0;
 	m_sp = 0;
 
+	memcpy(m_memory, chip8_fontset, 80);
 	memset(m_memory, 0, sizeof(unsigned char) * MEMORY_SIZE);
 	memset(m_v, 0, sizeof(unsigned char) * REGISTERS_NUM);
+
 	m_global_table[2] = &Chip8::opcode0x_2NNN;
 	m_global_table[6] = &Chip8::opcode0x_6XNN;
-	m_global_table[7] = &Chip8::opcode0x_7XNN;
+	m_global_table[7] = &Chip8::opcode0x_7XNN; // todo
 	m_global_table[8] = &Chip8::arithmetic_forward;
 	m_global_table[9] = &Chip8::opcode0x_9XY0;
 	m_global_table[0xb] = &Chip8::opcode0x_BNNN;
 	m_global_table[0xc] = &Chip8::opcode0x_CXNN;
 	m_global_table[0xe] = &Chip8::opcode_key_events;
+	m_global_table[7] = &Chip8::opcode_timers;
+
 
 	m_arithmetic_table[0] = &Chip8::opcode0x_8XY0;
 	m_arithmetic_table[1] = &Chip8::opcode0x_8XY1;
@@ -160,11 +183,6 @@ void Chip8::opcode0x_2NNN(){
 	m_pc = m_opcode & 0x0FFF;
 };
 
-void Chip8::opcode0x_FX33(){
-	std::cout << "TEST" << std::endl;
-};
-
-
 void Chip8::opcode0x_6XNN(){
 	unsigned int i = (m_opcode & 0x0F00) >> 8;
 	unsigned char value = m_opcode & 0x00ff;
@@ -189,6 +207,85 @@ void Chip8::opcode0x_EXA1(){
 	if(!m_key[m_v[r_x]]) m_pc += 2;
 	m_pc += 2;
 }
+
+void Chip8::opcode0x_FX07(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	m_v[r_x] = m_delay_timer;
+	m_pc += 2;
+}
+
+void Chip8::opcode0x_FX15(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	m_delay_timer = m_v[r_x];
+	m_pc += 2;
+}
+
+void Chip8::opcode0x_FX18(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	m_sound_timer = m_v[r_x];
+	m_pc += 2;
+};
+
+void Chip8::opcode_timers(){
+	switch(m_opcode & 0x00ff){
+		case 0x0007: opcode0x_FX07(); break;
+		case 0x0015: opcode0x_FX15(); break;
+		case 0x0018: opcode0x_FX18(); break;
+		default: std::cerr << "Uknown timer opcode : " << m_opcode << std::endl;
+	}
+};
+
+void Chip8::opcode0x_FX04(){
+	int i = 0;
+	while(1){
+		if(m_key[i]) break;
+		i = (i + 1) % KEY_PAD_SIZE;
+	}
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	m_v[r_x] = i;
+	m_pc += 2;
+};
+
+void Chip8::opcode0x_FX1E(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	m_i += m_v[r_x];
+	m_pc += 2;
+};
+
+void Chip8::opxode0x_FX29(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	unsigned char font_offset = 5 * m_v[r_x];
+	m_i = font_offset;
+	m_pc += 2;
+};
+
+void Chip8::opcode0x_FX55(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	int j = 0;
+	while(j <= r_x){
+		m_memory[m_i++] = m_v[j++];
+	}
+	m_i -= r_x;
+	m_pc += 2;
+}
+
+void Chip8::opcode0x_FX65(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	int j = 0;
+	while(j <= r_x){
+		m_v[j++] = m_memory[m_i++];
+	}
+	m_i -= r_x;
+	m_pc += 2;
+};
+
+void Chip8::opcode0x_FX33(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	m_memory[m_i] = m_v[r_x] / 100;
+	m_memory[m_i + 1] = (m_v[r_x] / 10) % 10;
+	m_memory[m_i + 2] = (m_v[r_x] % 100) % 10;
+	m_pc += 2;
+};
 
 void Chip8::emulate_cycle(){
 	m_opcode = m_memory[m_pc] << 8 | m_memory[m_pc + 1];
