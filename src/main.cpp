@@ -1,5 +1,6 @@
 #include <iostream>
 #include "chip8.h"
+#include <GLFW/glfw3.h>
 
 
 int main(){
