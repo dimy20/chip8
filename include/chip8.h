@@ -35,6 +35,7 @@ class Chip8{
 		void opcode0x_FX33();
 		void opcode0x_6XNN(); // Sets VX to NN.
 		void do_nothing();
+		void arithmetic_forward();
 	private:
 		unsigned short m_opcode; // 35 opcodes
 		unsigned char  m_memory[MEMORY_SIZE]; // 4k memory in total
@@ -47,7 +48,8 @@ class Chip8{
 		unsigned short m_stack[STACK_SIZE]; // stack
 		unsigned short m_sp; // stack pointer
 		unsigned char  m_key[KEY_PAD_SIZE]; // key pad // 0x0 - 0xf
-		std::unordered_map<int, void (Chip8::*)(void)> m_table;
+		std::unordered_map<int, void (Chip8::*)(void)> m_global_table;
+		std::unordered_map<int, void (Chip8::*)(void)> m_arithmetic_table;
 };
 
 

@@ -1,6 +1,15 @@
 #include "chip8.h"
 #include <cassert>
 
+void Chip8::arithmetic_forward(){
+	const int key = (m_opcode & 0x000f);
+	if(m_arithmetic_table.find(key) != m_arithmetic_table.end()){
+		void (Chip8::* fn)(void) = m_arithmetic_table[key];
+		(this->*fn)();
+	}else{
+		std::cerr << "Uknown arithmetic opcode" << std::endl;
+	}
+};
 void Chip8::do_nothing(){
 
 };
@@ -13,10 +22,20 @@ void Chip8::init(){
 
 	memset(m_memory, 0, sizeof(unsigned char) * MEMORY_SIZE);
 	memset(m_v, 0, sizeof(unsigned char) * REGISTERS_NUM);
-	m_table[2] = &Chip8::opcode0x_2NNN;
-	m_table[6] = &Chip8::opcode0x_6XNN;
-	m_table[7] = &Chip8::opcode0x_7XNN;
-	m_table[8] = &Chip8::opcode0x_8XY4;
+	m_global_table[2] = &Chip8::opcode0x_2NNN;
+	m_global_table[6] = &Chip8::opcode0x_6XNN;
+	m_global_table[7] = &Chip8::opcode0x_7XNN;
+	m_global_table[8] = &Chip8::arithmetic_forward;
+
+	m_arithmetic_table[0] = &Chip8::opcode0x_8XY0;
+	m_arithmetic_table[1] = &Chip8::opcode0x_8XY1;
+	m_arithmetic_table[2] = &Chip8::opcode0x_8XY2;
+	m_arithmetic_table[3] = &Chip8::opcode0x_8XY3;
+	m_arithmetic_table[4] = &Chip8::opcode0x_8XY4;
+	m_arithmetic_table[5] = &Chip8::opcode0x_8XY5;
+	m_arithmetic_table[6] = &Chip8::opcode0x_8XY6;
+	m_arithmetic_table[7] = &Chip8::opcode0x_8XY7;
+	m_arithmetic_table[0xE] = &Chip8::opcode0x_8XYE;
 };
 
 void Chip8::load_program(const char * filename){
@@ -132,8 +151,8 @@ void Chip8::opcode0x_6XNN(){
 void Chip8::emulate_cycle(){
 	m_opcode = m_memory[m_pc] << 8 | m_memory[m_pc + 1];
 	const int key = (m_opcode & 0xf000) >> 12;
-	if(m_table.find(key) != m_table.end()){
-		void (Chip8::* tmp)(void) = m_table[key];
+	if(m_global_table.find(key) != m_global_table.end()){
+		void (Chip8::* tmp)(void) = m_global_table[key];
 		(this->*tmp)();
 	}else{
 		std::cerr << "Unknown opcode [0X0000]: " << m_opcode << std::endl;
