@@ -19,7 +19,17 @@ class Chip8{
 		// adds the value of VY to VX, VF is set to 1 if there is a carry, or 0 if
 		// there isnt.
 		void opcode0x_7XNN(); // Adds NN to VX. (Carry flag is not changed);
+
+		void opcode0x_8XY0();
+		void opcode0x_8XY1();  /* Sets VX to VX or VY */
+		void opcode0x_8XY2();  
+		void opcode0x_8XY3();  
 		void opcode0x_8XY4();
+		void opcode0x_8XY5(); /* VY is subtracted from VX */
+		void opcode0x_8XY6();
+		void opcode0x_8XY7(); /* Sets Vx to Vy minus Vx */
+		void opcode0x_8XYE();
+
 		void opcode0x_ANNN();  //  ANNN: Sets I to the address NNN
 		void opcode0x_2NNN();  // calls function at adress nnn
 		void opcode0x_FX33();
