@@ -30,8 +30,17 @@ class Chip8{
 		void opcode0x_8XY7(); /* Sets Vx to Vy minus Vx */
 		void opcode0x_8XYE();
 
+		void opcode0x_9XY0(); // skip next instruction if vx != vy
+
 		void opcode0x_ANNN();  //  ANNN: Sets I to the address NNN
 		void opcode0x_2NNN();  // calls function at adress nnn
+		void opcode0x_BNNN();
+		void opcode0x_CXNN();
+
+		void opcode_key_events();
+		void opcode0x_EX9E();
+		void opcode0x_EXA1();
+
 		void opcode0x_FX33();
 		void opcode0x_6XNN(); // Sets VX to NN.
 		void do_nothing();

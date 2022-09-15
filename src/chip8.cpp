@@ -26,6 +26,10 @@ void Chip8::init(){
 	m_global_table[6] = &Chip8::opcode0x_6XNN;
 	m_global_table[7] = &Chip8::opcode0x_7XNN;
 	m_global_table[8] = &Chip8::arithmetic_forward;
+	m_global_table[9] = &Chip8::opcode0x_9XY0;
+	m_global_table[0xb] = &Chip8::opcode0x_BNNN;
+	m_global_table[0xc] = &Chip8::opcode0x_CXNN;
+	m_global_table[0xe] = &Chip8::opcode_key_events;
 
 	m_arithmetic_table[0] = &Chip8::opcode0x_8XY0;
 	m_arithmetic_table[1] = &Chip8::opcode0x_8XY1;
@@ -119,16 +123,36 @@ void Chip8::opcode0x_8XYE(){
 	m_pc += 2;
 };
 
+void Chip8::opcode0x_9XY0(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	const int r_y = (m_opcode & 0x00f0) >> 4;
+	if(m_v[r_x] != m_v[r_y]) m_pc += 2;
+	m_pc += 2;
+};
+
 void Chip8::opcode0x_7XNN(){
 	unsigned int r_x = (m_opcode & 0x0f00) >> 8;
 	unsigned char value = (m_opcode & 0x00ff);
 	m_v[r_x] += value;
+	m_pc += 2;
 };
 
 void Chip8::opcode0x_ANNN(){
 	m_i = m_opcode & 0x0FFF;
 	m_pc += 2;
 	std::cout << "ANNN" << std::endl;
+};
+
+void Chip8::opcode0x_BNNN(){
+	const char addr = (m_opcode & 0x0fff);
+	m_pc = m_v[0x0] + addr;
+};
+
+void Chip8::opcode0x_CXNN(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	const char value = (m_opcode & 0x00ff);
+	m_v[r_x] = (rand() % 256) & value;
+	m_pc += 2;
 };
 
 void Chip8::opcode0x_2NNN(){
@@ -148,6 +172,23 @@ void Chip8::opcode0x_6XNN(){
 	m_v[i] = value;
 	m_pc += 2;
 };
+
+void Chip8::opcode_key_events(){
+	if(m_opcode & 0x000f == 0xe) opcode0x_EX9E();
+	if(m_opcode & 0x000f == 0x1) opcode0x_EXA1();
+};
+
+void Chip8::opcode0x_EX9E(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	if(m_key[m_v[r_x]]) m_pc += 2;
+	m_pc += 2;
+}
+
+void Chip8::opcode0x_EXA1(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	if(!m_key[m_v[r_x]]) m_pc += 2;
+	m_pc += 2;
+}
 
 void Chip8::emulate_cycle(){
 	m_opcode = m_memory[m_pc] << 8 | m_memory[m_pc + 1];
