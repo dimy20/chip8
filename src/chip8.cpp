@@ -304,6 +304,30 @@ void Chip8::opcode0x_FX33(){
 	m_pc += 2;
 };
 
+void Chip8::opcode0x_DXYN(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	const int r_y = (m_opcode & 0x00f0) >> 4;
+	int x = m_v[r_x] % 64;
+	int y = m_v[r_y] % 64;
+	int n = (m_opcode & 0x000f);
+	m_v[0xf] = 0;
+	// each row-bytes is a bitmap of wich pixel should be drawn
+	for(int row = 0; row < n; row++){
+		unsigned char byte = m_memory[m_i + row];
+		for(int bit_index = 0; bit_index < 8; bit_index){
+			// get bit
+			unsigned char bit_value = (byte >> bit_index) & 0x1;
+			unsigned char * curr_pixel;
+			curr_pixel = &m_gfx[(row + x) % ROWS][(bit_index + y) % COLS];
+			// collision?
+			if(bit_value == 1 && *curr_pixel == 1) m_v[0xf] = 1;
+
+			//draw
+			*curr_pixel ^= bit_value;
+		}
+	};
+};
+
 void Chip8::emulate_cycle(){
 	m_opcode = m_memory[m_pc] << 8 | m_memory[m_pc + 1];
 	const int key = (m_opcode & 0xf000) >> 12;

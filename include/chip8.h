@@ -8,6 +8,8 @@
 #define STACK_SIZE 16
 #define KEY_PAD_SIZE 16
 #define LOAD_ADDRESS 512
+#define ROWS 32
+#define COLS 62
 
 
 
@@ -63,13 +65,16 @@ class Chip8{
 		void opcode0x_FX33();
 		void opcode0x_FX55();
 		void opcode0x_FX65();
+
+		/*graphics*/
+		void opcode0x_DXYN();
 	private:
 		unsigned short m_opcode; // 35 opcodes
 		unsigned char  m_memory[MEMORY_SIZE]; // 4k memory in total
 		unsigned char  m_v[REGISTERS_NUM]; // registers
 		unsigned short m_i; // index register
 		unsigned short m_pc; // program counter
-		unsigned char  m_gfx[64 * 32]; // 2048 black and white pixels
+		unsigned char  m_gfx[ROWS][COLS]; // 2048 black and white pixels
 		unsigned char  m_delay_timer;
 		unsigned char  m_sound_timer;
 		unsigned short m_stack[STACK_SIZE]; // stack
