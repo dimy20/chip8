@@ -307,8 +307,8 @@ void Chip8::opcode0x_FX33(){
 void Chip8::opcode0x_DXYN(){
 	const int r_x = (m_opcode & 0x0f00) >> 8;
 	const int r_y = (m_opcode & 0x00f0) >> 4;
-	int x = m_v[r_x] % 64;
-	int y = m_v[r_y] % 64;
+	int x = m_v[r_x];
+	int y = m_v[r_y];
 	int n = (m_opcode & 0x000f);
 	m_v[0xf] = 0;
 	// each row-bytes is a bitmap of wich pixel should be drawn
