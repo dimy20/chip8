@@ -2,6 +2,8 @@
 #include <cstring>
 #include <iostream>
 #include <unordered_map>
+#include <memory>
+#include "Screen.h"
 
 #define MEMORY_SIZE 4096
 #define REGISTERS_NUM 16
@@ -9,16 +11,17 @@
 #define KEY_PAD_SIZE 16
 #define LOAD_ADDRESS 512
 #define ROWS 32
-#define COLS 62
+#define COLS 64
 
 
 
 class Chip8{
 	public:
-		Chip8() = default;
+		Chip8(std::shared_ptr<Screen> screen);
 		void init();
 		void emulate_cycle();
 		void load_program(const char * filename);
+		void draw();
 	private:
 		// adds the value of VY to VX, VF is set to 1 if there is a carry, or 0 if
 		// there isnt.
@@ -74,7 +77,7 @@ class Chip8{
 		unsigned char  m_v[REGISTERS_NUM]; // registers
 		unsigned short m_i; // index register
 		unsigned short m_pc; // program counter
-		unsigned char  m_gfx[ROWS][COLS]; // 2048 black and white pixels
+		unsigned char  m_gfx[ROWS * COLS] = {0}; // 2048 black and white pixels
 		unsigned char  m_delay_timer;
 		unsigned char  m_sound_timer;
 		unsigned short m_stack[STACK_SIZE]; // stack
@@ -84,7 +87,8 @@ class Chip8{
 		std::unordered_map<int, void (Chip8::*)(void)> m_arithmetic_table;
 		std::unordered_map<int, void (Chip8::*)(void)> m_timers_table;
 		std::unordered_map<int, void (Chip8::*)(void)> m_misc_table;
+
+		std::shared_ptr<Screen> m_screen;
+		bool m_render = false;
 };
-
-
 

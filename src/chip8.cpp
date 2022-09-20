@@ -1,5 +1,6 @@
 #include "chip8.h"
 #include <cassert>
+#include <unistd.h>
 
 unsigned char chip8_fontset[80] = {
 	0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -48,6 +49,12 @@ void Chip8::handle_misc_and_timers(){
 		}
 	}
 }
+
+Chip8::Chip8(std::shared_ptr<Screen> screen) : m_screen(screen) {
+	init();
+	screen->init_texture(64, 32, m_gfx);
+};
+
 void Chip8::init(){
 	m_pc = 0x2000;
 	m_opcode = 0;
@@ -57,14 +64,17 @@ void Chip8::init(){
 	memcpy(m_memory, chip8_fontset, 80);
 	memset(m_memory, 0, sizeof(unsigned char) * MEMORY_SIZE);
 	memset(m_v, 0, sizeof(unsigned char) * REGISTERS_NUM);
+	memset(m_gfx, 0, sizeof(char) * (32 * 64));
 
 	m_global_table[2] = &Chip8::opcode0x_2NNN;
 	m_global_table[6] = &Chip8::opcode0x_6XNN;
 	m_global_table[7] = &Chip8::opcode0x_7XNN; // todo
 	m_global_table[8] = &Chip8::handle_arithmetic;
 	m_global_table[9] = &Chip8::opcode0x_9XY0;
+	m_global_table[0xa] = &Chip8::opcode0x_ANNN;
 	m_global_table[0xb] = &Chip8::opcode0x_BNNN;
 	m_global_table[0xc] = &Chip8::opcode0x_CXNN;
+	m_global_table[0xd] = &Chip8::opcode0x_DXYN;
 	m_global_table[0xe] = &Chip8::handle_key_events;
 	m_global_table[0xf] = &Chip8::handle_misc_and_timers;
 
@@ -89,15 +99,40 @@ void Chip8::init(){
 	m_arithmetic_table[6] = &Chip8::opcode0x_8XY6;
 	m_arithmetic_table[7] = &Chip8::opcode0x_8XY7;
 	m_arithmetic_table[0xE] = &Chip8::opcode0x_8XYE;
+
+	//m_screen = std::make_shared<Screen>();
 };
 
 void Chip8::load_program(const char * filename){
+	/*
 	unsigned short i = 0x6202;
 	unsigned short i2  = 0x8124;
 	m_memory[m_pc] = (i & 0xFF00) >> 8;
 	m_memory[m_pc + 1] = i & 0x00FF;
 	m_memory[m_pc + 2] = (i2 & 0xFF00) >> 8;
 	m_memory[m_pc + 3] = i2 & 0x00FF;
+	*/
+
+	m_memory[m_pc] = (0x6200 & 0xff00) >> 8;
+	m_memory[m_pc + 1] = (0x6200 & 0x00ff);
+
+	m_memory[m_pc + 2] = (0x6100 & 0xff00) >> 8;
+	m_memory[m_pc + 3] = (0x6100 & 0x00ff);
+
+	// set i to sprite address
+	m_memory[m_pc + 4] = (0xa400 & 0xff00) >> 8;
+	m_memory[m_pc + 5] = (0xa400 & 0x00ff);
+	// draw sprite at (v[1],v[2]), 3 rows high
+	m_memory[m_pc + 6] = (0xd123 & 0xff00) >> 8;
+	m_memory[m_pc + 7] = (0xd123 & 0x00ff);
+
+
+
+	// save sprite in memory
+	m_memory[1024] = 0x3C;
+	m_memory[1025] = 0xC3;
+	m_memory[1026] = 0xFF;
+	
 	//std::cout << (i & 0x00FF) << std::endl;
 };
 
@@ -187,7 +222,7 @@ void Chip8::opcode0x_7XNN(){
 };
 
 void Chip8::opcode0x_ANNN(){
-	m_i = m_opcode & 0x0FFF;
+	m_i = m_opcode & 0x0fff;
 	m_pc += 2;
 	std::cout << "ANNN" << std::endl;
 };
@@ -314,18 +349,18 @@ void Chip8::opcode0x_DXYN(){
 	// each row-bytes is a bitmap of wich pixel should be drawn
 	for(int row = 0; row < n; row++){
 		unsigned char byte = m_memory[m_i + row];
-		for(int bit_index = 0; bit_index < 8; bit_index){
-			// get bit
+		for(int bit_index = 0; bit_index < 8; bit_index++){
 			unsigned char bit_value = (byte >> bit_index) & 0x1;
 			unsigned char * curr_pixel;
-			curr_pixel = &m_gfx[(row + x) % ROWS][(bit_index + y) % COLS];
-			// collision?
+			curr_pixel = &m_gfx[((row + y) * 64) + (x + bit_index)];
+			// collision ?
 			if(bit_value == 1 && *curr_pixel == 1) m_v[0xf] = 1;
-
 			//draw
 			*curr_pixel ^= bit_value;
 		}
 	};
+	m_pc += 2;
+	m_render = true;
 };
 
 void Chip8::emulate_cycle(){
@@ -336,7 +371,6 @@ void Chip8::emulate_cycle(){
 		(this->*tmp)();
 	}else{
 		std::cerr << "Unknown opcode [0X0000]: " << m_opcode << std::endl;
-		exit(EXIT_FAILURE);
 	}
 	/*
 	switch(m_opcode & 0xF000){
@@ -366,3 +400,16 @@ void Chip8::emulate_cycle(){
 		--m_sound_timer;
 	}
 }
+
+void Chip8::draw(){
+	unsigned char tmp[64 * 32] = {0};
+	for(int i = 0; i < 32; i++){
+		for(int j = 0; j < 64; j++){
+			if(m_gfx[(i * 64) + j] != 0){
+				tmp[(i * 64) + j] = 255;
+			}
+		}
+	}
+	m_screen->update_texture(tmp);
+	m_screen->render();
+};
