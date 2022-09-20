@@ -1,57 +1,122 @@
 #include "Screen.h"
-static void pixel_impl_init(pixel_impl_t * pixel){
-	assert(pixel != nullptr);
-    float vertices[] = {
-		-0.5f, 0.5f,
-		-0.5f, 0.0f,
-		0.0f, 0.0f,
-		0.0f, 0.5f
+#include "stb_image.h"
+void Screen::init(){
+	 float vertices[] = {
+        // display rect     // texture coords
+         0.5f,  0.5f,	     1.0f, 1.0f, // top right
+         0.5f, -0.5f,	     1.0f, 0.0f, // bottom right
+        -0.5f, -0.5f,	     0.0f, 0.0f, // bottom left
+        -0.5f,  0.5f,	     0.0f, 1.0f  // top left 
     };
-	unsigned int indices[] = {0, 1, 2, 
-							0, 3, 2};
 
-	glGenVertexArrays(1, &pixel->vao);
-	glGenBuffers(1, &pixel->vbo);
-	glGenBuffers(1, &pixel->ebo);
-	glBindVertexArray(pixel->vao);
+    unsigned int indices[] = {0, 1, 3, 1, 2, 3};
 
-	glBindBuffer(GL_ARRAY_BUFFER, pixel->vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+	glGenVertexArrays(1, &m_vao);
+	glGenBuffers(1, &m_vbo);
+	glGenBuffers(1, &m_ebo);
+	glBindVertexArray(m_vao);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pixel->ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-};
 
-static void window_init(GLFWwindow ** window){
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	GLenum err(glGetError());
+
+    while (err != GL_NO_ERROR)
+    {
+		std::cerr << "OpenGL error: " << err << " "<< std::endl;
+        err = glGetError();
+    }
+
+}
+
+void Screen::init_window(){
 	glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	*window = glfwCreateWindow(1024, 768, "Chip8 emulator", NULL, NULL);
-	if(!(*window)){
+	m_window = glfwCreateWindow(1024, 768, "Chip8 emulator", NULL, NULL);
+	if(!m_window){
 		glfwTerminate();
 		return;
 	};
 
-	glfwMakeContextCurrent(*window);
+	glfwMakeContextCurrent(m_window);
 	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
 	gladLoadGL();
 	glViewport(0, 0, 1024, 768);
+
+	GLenum err(glGetError());
+
+    while (err != GL_NO_ERROR)
+    {
+		std::cerr << "OpenGL error: " << err << " "<< std::endl;
+        err = glGetError();
+    }
 }
 
 Screen::Screen(){
-	window_init(&m_window);
-	m_shader = std::make_shared<Shader>("../shaders/vert.glsl", "../shaders/frag.glsl");
-	pixel_impl_init(&m_pixel);
+	init_window();
+	const char * vertex = "../shaders/vert.glsl";
+	const char * frag = "../shaders/frag.glsl";
+	m_shader = std::make_shared<Shader>(vertex, frag);
+	init();
 };
 
-void Screen::draw_pixel(int x, int y){
+void Screen::init_texture(int w, int h, unsigned char * data){
+	glGenTextures(1, &m_texture);
+	glBindTexture(GL_TEXTURE_2D, m_texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	GLenum err(glGetError());
+
+    while (err != GL_NO_ERROR)
+    {
+		std::cerr << "OpenGL error: " << err << " "<< std::endl;
+        err = glGetError();
+    }
+};
+
+void Screen::update_texture(unsigned char * data){
+	glBindTexture(GL_TEXTURE_2D, m_texture);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 64, 32, GL_RED, GL_UNSIGNED_BYTE, data);
+	glBindTexture(GL_TEXTURE_2D, 0);
+};
+
+void Screen::render(){
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_texture);
+
 	m_shader->use();
-	glBindVertexArray(m_pixel.vao);
+
+	glBindVertexArray(m_vao);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	GLenum err(glGetError());
+
+    while (err != GL_NO_ERROR)
+    {
+		std::cerr << "OpenGL error: " << err << " "<< std::endl;
+        err = glGetError();
+    }
 };
 
 Screen::operator bool(){
