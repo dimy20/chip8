@@ -6,7 +6,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_BUILD_TYPE Debug)
 
 add_subdirectory(glfw)
-add_executable(main src/main.cpp src/chip8.cpp)
+add_executable(main src/main.cpp
+					src/glad.c
+				    src/chip8.cpp
+					src/Shader.cpp
+					src/Screen.cpp)
+
 target_include_directories(main PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include glfw)
-target_link_libraries(main glfw)
-									   
+target_link_libraries(main glfw GL)
