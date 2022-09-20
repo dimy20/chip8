@@ -372,28 +372,6 @@ void Chip8::emulate_cycle(){
 	}else{
 		std::cerr << "Unknown opcode [0X0000]: " << m_opcode << std::endl;
 	}
-	/*
-	switch(m_opcode & 0xF000){
-		case 0xA000: opcode0x_ANNN(); break;
-		case 0X2000: opcode0x_2NNN(); break;
-		case 0x8000: opcode0x_8XY4(); break;
-		case 0x0033: opcode0x_FX33(); break;
-		case 0x6000: opcode0x_6XNN(); break;
-		case 0X0000:
-			switch(m_opcode & 0X000F){
-				case 0X0000: // 0X00E0 - Clears the screen
-				break;
-				case 0X000E: // 0X00EE - returns from subroutine
-				break;
-				default:
-					std::cerr << "Unknown opcode [0X0000]: " << m_opcode << std::endl;
-					exit(EXIT_FAILURE);
-			}
-		default:
-			std::cerr << "Unknown opcode : " << m_opcode << std::endl;
-			exit(EXIT_FAILURE);
-	}
-	*/
 	if(m_delay_timer > 0) m_delay_timer--;
 	if(m_sound_timer > 0){
 		if(m_sound_timer == 1) std::cout << "BEEP!" << std::endl;
