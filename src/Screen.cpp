@@ -171,3 +171,17 @@ void Screen::swap_buffers(){
 
 void Screen::close(){ glfwTerminate(); };
 void Screen::clear(){ glClear(GL_COLOR_BUFFER_BIT);};
+
+void Screen::update_fps(){
+	if(m_prev_s == 0) m_prev_s = glfwGetTime();
+
+    m_curr_s = glfwGetTime();
+	m_frames_count++;
+
+	double delta = m_curr_s - m_prev_s;
+	if(delta > 1.0f){
+		m_prev_s = m_curr_s;
+		m_fps = (int)m_frames_count / (int)(delta);
+		m_frames_count = 0;
+	}
+};
