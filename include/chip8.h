@@ -3,7 +3,6 @@
 #include <iostream>
 #include <unordered_map>
 #include <memory>
-#include "Screen.h"
 
 #define MEMORY_SIZE 4096
 #define REGISTERS_NUM 16
@@ -17,7 +16,7 @@
 
 class Chip8{
 	public:
-		Chip8(std::shared_ptr<Screen> screen);
+		Chip8();
 		void init();
 		void emulate_cycle();
 		void load_program(const char * filename);
@@ -62,7 +61,7 @@ class Chip8{
 
 		/*misc*/
 
-		void opcode0x_FX04();
+		void opcode0x_FX0A();
 		void opcode0x_FX1E();
 		void opcode0x_FX29();
 		void opcode0x_FX33();
@@ -71,13 +70,15 @@ class Chip8{
 
 		/*graphics*/
 		void opcode0x_DXYN();
+
+
 	private:
 		unsigned short m_opcode; // 35 opcodes
 		unsigned char  m_memory[MEMORY_SIZE]; // 4k memory in total
 		unsigned char  m_v[REGISTERS_NUM]; // registers
 		unsigned short m_i; // index register
 		unsigned short m_pc; // program counter
-		unsigned char  m_gfx[ROWS * COLS] = {0}; // 2048 black and white pixels
+		unsigned char  m_gfx[ROWS * COLS]; // 2048 black and white pixels
 		unsigned char  m_delay_timer;
 		unsigned char  m_sound_timer;
 		unsigned short m_stack[STACK_SIZE]; // stack
@@ -88,7 +89,6 @@ class Chip8{
 		std::unordered_map<int, void (Chip8::*)(void)> m_timers_table;
 		std::unordered_map<int, void (Chip8::*)(void)> m_misc_table;
 
-		std::shared_ptr<Screen> m_screen;
-		bool m_render = false;
+		bool m_interrupt = false;
 };
 

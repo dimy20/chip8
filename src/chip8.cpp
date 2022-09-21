@@ -32,7 +32,7 @@ void Chip8::handle_arithmetic(){
 };
 
 void Chip8::handle_misc_and_timers(){
-	const int key = (m_opcode & 0xf000) >> 12;
+	const int key = (m_opcode & 0x00ff);
 	if(key == 0x07 || key == 0x15 || key == 0x18){
 		if(m_timers_table.find(key) != m_timers_table.end()){
 			void (Chip8::* fn)(void) = m_timers_table[key];
@@ -50,19 +50,16 @@ void Chip8::handle_misc_and_timers(){
 	}
 }
 
-Chip8::Chip8(std::shared_ptr<Screen> screen) : m_screen(screen) {
-	init();
-	screen->init_texture(64, 32, m_gfx);
-};
+Chip8::Chip8(){ init(); };
 
 void Chip8::init(){
-	m_pc = 0x2000;
+	m_pc = 0x0200;
 	m_opcode = 0;
 	m_i = 0;
 	m_sp = 0;
 
-	memcpy(m_memory, chip8_fontset, 80);
 	memset(m_memory, 0, sizeof(unsigned char) * MEMORY_SIZE);
+	memcpy(m_memory, chip8_fontset, 80);
 	memset(m_v, 0, sizeof(unsigned char) * REGISTERS_NUM);
 	memset(m_gfx, 0, sizeof(char) * (32 * 64));
 
@@ -83,24 +80,23 @@ void Chip8::init(){
 	m_timers_table[0x15] = &Chip8::opcode0x_FX15;
 	m_timers_table[0x18] = &Chip8::opcode0x_FX18;
 	// misc
-	m_misc_table[0x04] = &Chip8::opcode0x_FX04;
+	m_misc_table[0x0A] = &Chip8::opcode0x_FX0A;
 	m_misc_table[0x1E] = &Chip8::opcode0x_FX1E;
 	m_misc_table[0x29] = &Chip8::opcode0x_FX29;
 	m_misc_table[0x33] = &Chip8::opcode0x_FX33;
 	m_misc_table[0x55] = &Chip8::opcode0x_FX55;
 	m_misc_table[0x65] = &Chip8::opcode0x_FX65;
 	// arithmetic
-	m_arithmetic_table[0] = &Chip8::opcode0x_8XY0;
-	m_arithmetic_table[1] = &Chip8::opcode0x_8XY1;
-	m_arithmetic_table[2] = &Chip8::opcode0x_8XY2;
-	m_arithmetic_table[3] = &Chip8::opcode0x_8XY3;
-	m_arithmetic_table[4] = &Chip8::opcode0x_8XY4;
-	m_arithmetic_table[5] = &Chip8::opcode0x_8XY5;
-	m_arithmetic_table[6] = &Chip8::opcode0x_8XY6;
-	m_arithmetic_table[7] = &Chip8::opcode0x_8XY7;
+	m_arithmetic_table[0x0] = &Chip8::opcode0x_8XY0;
+	m_arithmetic_table[0x1] = &Chip8::opcode0x_8XY1;
+	m_arithmetic_table[0x2] = &Chip8::opcode0x_8XY2;
+	m_arithmetic_table[0x3] = &Chip8::opcode0x_8XY3;
+	m_arithmetic_table[0x4] = &Chip8::opcode0x_8XY4;
+	m_arithmetic_table[0x5] = &Chip8::opcode0x_8XY5;
+	m_arithmetic_table[0x6] = &Chip8::opcode0x_8XY6;
+	m_arithmetic_table[0x7] = &Chip8::opcode0x_8XY7;
 	m_arithmetic_table[0xE] = &Chip8::opcode0x_8XYE;
 
-	//m_screen = std::make_shared<Screen>();
 };
 
 void Chip8::load_program(const char * filename){
