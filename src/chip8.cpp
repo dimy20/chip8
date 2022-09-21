@@ -100,15 +100,6 @@ void Chip8::init(){
 };
 
 void Chip8::load_program(const char * filename){
-	/*
-	unsigned short i = 0x6202;
-	unsigned short i2  = 0x8124;
-	m_memory[m_pc] = (i & 0xFF00) >> 8;
-	m_memory[m_pc + 1] = i & 0x00FF;
-	m_memory[m_pc + 2] = (i2 & 0xFF00) >> 8;
-	m_memory[m_pc + 3] = i2 & 0x00FF;
-	*/
-
 	m_memory[m_pc] = (0x6200 & 0xff00) >> 8;
 	m_memory[m_pc + 1] = (0x6200 & 0x00ff);
 
@@ -118,10 +109,21 @@ void Chip8::load_program(const char * filename){
 	// set i to sprite address
 	m_memory[m_pc + 4] = (0xa400 & 0xff00) >> 8;
 	m_memory[m_pc + 5] = (0xa400 & 0x00ff);
-	// draw sprite at (v[1],v[2]), 3 rows high
-	m_memory[m_pc + 6] = (0xd123 & 0xff00) >> 8;
-	m_memory[m_pc + 7] = (0xd123 & 0x00ff);
 
+	m_memory[m_pc + 6] = (0xf60A & 0xff00) >> 8;
+	m_memory[m_pc + 7] = (0xd60A & 0x00ff);
+
+	// draw sprite at (v[1],v[2]), 3 rows high
+	m_memory[m_pc + 8] = (0xd123 & 0xff00) >> 8;
+	m_memory[m_pc + 9] = (0xd123 & 0x00ff);
+
+	// store 255 in register 5
+	m_memory[m_pc + 10] = (0x65ff & 0xff00) >> 8;
+	m_memory[m_pc + 11] = (0x65ff & 0x00ff);
+
+	// set sound timer to value in register 5
+	m_memory[m_pc + 12] = (0xf518 & 0xff00) >> 8;
+	m_memory[m_pc + 13] = (0xf518 & 0x00ff);
 
 
 	// save sprite in memory
@@ -129,7 +131,6 @@ void Chip8::load_program(const char * filename){
 	m_memory[1025] = 0xC3;
 	m_memory[1026] = 0xFF;
 	
-	//std::cout << (i & 0x00FF) << std::endl;
 };
 
 
@@ -220,7 +221,7 @@ void Chip8::opcode0x_7XNN(){
 void Chip8::opcode0x_ANNN(){
 	m_i = m_opcode & 0x0fff;
 	m_pc += 2;
-	std::cout << "ANNN" << std::endl;
+	std::cout << "Setting index to " << m_i << std::endl;
 };
 
 void Chip8::opcode0x_BNNN(){
@@ -280,18 +281,16 @@ void Chip8::opcode0x_FX15(){
 void Chip8::opcode0x_FX18(){
 	const int r_x = (m_opcode & 0x0f00) >> 8;
 	m_sound_timer = m_v[r_x];
+	std::cout << "setting sound timer to " << (int)m_v[r_x] << std::endl;
 	m_pc += 2;
 };
 
-void Chip8::opcode0x_FX04(){
-	int i = 0;
-	while(1){
-		if(m_key[i]) break;
-		i = (i + 1) % KEY_PAD_SIZE;
-	}
+void Chip8::opcode0x_FX0A(){
 	const int r_x = (m_opcode & 0x0f00) >> 8;
-	m_v[r_x] = i;
+	std::cout << "waiting key_press and storing in " << r_x << std::endl;
+	m_wait_key = r_x;
 	m_pc += 2;
+	m_interrupt = true;
 };
 
 void Chip8::opcode0x_FX1E(){
@@ -356,23 +355,34 @@ void Chip8::opcode0x_DXYN(){
 		}
 	};
 	m_pc += 2;
-	m_render = true;
+	m_interrupt = true;
 };
 
-void Chip8::emulate_cycle(){
-	m_opcode = m_memory[m_pc] << 8 | m_memory[m_pc + 1];
-	const int key = (m_opcode & 0xf000) >> 12;
-	if(m_global_table.find(key) != m_global_table.end()){
-		void (Chip8::* tmp)(void) = m_global_table[key];
-		(this->*tmp)();
-	}else{
-		std::cerr << "Unknown opcode [0X0000]: " << m_opcode << std::endl;
+long Chip8::emulate_cycles(){
+	int n = CYCLES_PER_FRAME;
+	int i = 0;
+	if(m_wait_key == NO_KEY_WAIT){
+		for(; i < n; i++){
+			// cycle
+			m_opcode = m_memory[m_pc] << 8 | m_memory[m_pc + 1];
+			const int key = (m_opcode & 0xf000) >> 12;
+			if(m_global_table.find(key) != m_global_table.end()){
+				void (Chip8::* tmp)(void) = m_global_table[key];
+				(this->*tmp)();
+			}else{
+				//std::cerr << "Unknown opcode [0X0000]: " << m_opcode << std::endl;
+			}
+			if(m_interrupt) break;
+		}
 	}
+	m_interrupt = false;
 	if(m_delay_timer > 0) m_delay_timer--;
-	if(m_sound_timer > 0){
-		if(m_sound_timer == 1) std::cout << "BEEP!" << std::endl;
-		--m_sound_timer;
-	}
+	if(m_sound_timer > 0 && --m_sound_timer == 0) std::cout << "BEEP!" << std::endl;
+
+	// how long do these cycles take in chip time?
+	const long sec_ns = (1000 * 1000 * 1000);
+	long elapsed_time = (i * sec_ns) / CHIP_CLOCK_SPEED;
+	return elapsed_time;
 }
 
 void Chip8::draw(){
@@ -384,6 +394,10 @@ void Chip8::draw(){
 			}
 		}
 	}
-	m_screen->update_texture(tmp);
-	m_screen->render();
 };
+
+void Chip8::key_pressed(unsigned char key){
+	assert(key <= 0xf);
+	assert(m_wait_key != NO_KEY_WAIT);
+	m_v[m_wait_key] = key;
+}

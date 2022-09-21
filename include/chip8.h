@@ -11,16 +11,22 @@
 #define LOAD_ADDRESS 512
 #define ROWS 32
 #define COLS 64
-
-
+#define NO_KEY_WAIT -1
+#define CHIP_CLOCK_SPEED 500
+#define CYCLES_PER_FRAME 8
+#define CHIP_NS_PER_FRAME 16000000
 
 class Chip8{
 	public:
 		Chip8();
 		void init();
-		void emulate_cycle();
+		long emulate_cycles();
 		void load_program(const char * filename);
 		void draw();
+		unsigned char * gfx() { return m_gfx; };
+		unsigned char * keys() { return m_key; };
+		void key_pressed(unsigned char key);
+		int m_wait_key = NO_KEY_WAIT;
 	private:
 		// adds the value of VY to VX, VF is set to 1 if there is a carry, or 0 if
 		// there isnt.
