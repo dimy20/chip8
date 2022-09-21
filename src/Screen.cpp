@@ -1,5 +1,25 @@
 #include "Screen.h"
-#include "stb_image.h"
+void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods){
+	Screen * screen = static_cast<Screen *>(glfwGetWindowUserPointer(window));
+	screen->handle_keys(key, action);
+};
+
+void Screen::handle_keys(int key, int action){
+	if(m_key_map.find(key) != m_key_map.end()){
+		if(action == GLFW_PRESS && m_chip8->m_wait_key != NO_KEY_WAIT){
+			std::cout << (int)m_key_map[key] << " pressed " << std::endl;
+			m_chip8->key_pressed(m_key_map[key]);
+			m_chip8->m_wait_key = NO_KEY_WAIT;
+		}
+
+		// store state
+		int key_index = m_key_map[key];
+		unsigned char * keys = m_chip8->keys();
+		keys[key_index] = (action == GLFW_PRESS || GLFW_REPEAT) ? 1 : 0;
+	}
+
+};
+
 void Screen::init(){
 	 float vertices[] = {
         // display rect     // texture coords
@@ -53,6 +73,8 @@ void Screen::init_window(){
 	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
 	gladLoadGL();
 	glViewport(0, 0, 1024, 768);
+	glfwSetKeyCallback(m_window, key_cb);
+	glfwSetWindowUserPointer(m_window, this);
 
 	GLenum err(glGetError());
 
@@ -63,12 +85,30 @@ void Screen::init_window(){
     }
 }
 
-Screen::Screen(){
+Screen::Screen(std::shared_ptr<Chip8> chip) : m_chip8(chip) {
 	init_window();
 	const char * vertex = "../shaders/vert.glsl";
 	const char * frag = "../shaders/frag.glsl";
 	m_shader = std::make_shared<Shader>(vertex, frag);
 	init();
+	init_texture(64, 32, chip->gfx());
+	m_key_map[GLFW_KEY_1] = 1;
+	m_key_map[GLFW_KEY_2] = 2;
+	m_key_map[GLFW_KEY_3] = 3;
+	m_key_map[GLFW_KEY_4] = 0x0c;
+	m_key_map[GLFW_KEY_Q] = 4;
+	m_key_map[GLFW_KEY_W] = 5;
+	m_key_map[GLFW_KEY_E] = 6;
+	m_key_map[GLFW_KEY_R] = 0x0d;
+	m_key_map[GLFW_KEY_A] = 7;
+	m_key_map[GLFW_KEY_S] = 8;
+	m_key_map[GLFW_KEY_D] = 9;
+	m_key_map[GLFW_KEY_F] = 0x0e;
+	m_key_map[GLFW_KEY_Z] = 0x0a;
+	m_key_map[GLFW_KEY_X] = 0;
+	m_key_map[GLFW_KEY_C] = 0x0b;
+	m_key_map[GLFW_KEY_V] = 0x0f;
+
 };
 
 void Screen::init_texture(int w, int h, unsigned char * data){
