@@ -385,17 +385,6 @@ long Chip8::emulate_cycles(){
 	return elapsed_time;
 }
 
-void Chip8::draw(){
-	unsigned char tmp[64 * 32] = {0};
-	for(int i = 0; i < 32; i++){
-		for(int j = 0; j < 64; j++){
-			if(m_gfx[(i * 64) + j] != 0){
-				tmp[(i * 64) + j] = 255;
-			}
-		}
-	}
-};
-
 void Chip8::key_pressed(unsigned char key){
 	assert(key <= 0xf);
 	assert(m_wait_key != NO_KEY_WAIT);

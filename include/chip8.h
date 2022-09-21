@@ -22,7 +22,6 @@ class Chip8{
 		void init();
 		long emulate_cycles();
 		void load_program(const char * filename);
-		void draw();
 		unsigned char * gfx() { return m_gfx; };
 		unsigned char * keys() { return m_key; };
 		void key_pressed(unsigned char key);
