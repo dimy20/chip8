@@ -141,7 +141,21 @@ void Screen::update_texture(unsigned char * data){
 	glBindTexture(GL_TEXTURE_2D, 0);
 };
 
-void Screen::render(){
+long Screen::render(){
+	struct timespec frame_start, frame_end;
+	clock_gettime(CLOCK_MONOTONIC, &frame_start);
+
+	const unsigned char * gfx = m_chip8->gfx();
+	unsigned char tmp[64 * 32] = {0};
+	for(int i = 0; i < 32; i++){
+		for(int j = 0; j < 64; j++){
+			if(gfx[(i * 64) + j] != 0){
+				tmp[(i * 64) + j] = 255;
+			}
+		}
+	}
+	update_texture(tmp);
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_texture);
 
@@ -150,6 +164,7 @@ void Screen::render(){
 	glBindVertexArray(m_vao);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+	clock_gettime(CLOCK_MONOTONIC, &frame_end);
 	GLenum err(glGetError());
 
     while (err != GL_NO_ERROR)
@@ -157,6 +172,10 @@ void Screen::render(){
 		std::cerr << "OpenGL error: " << err << " "<< std::endl;
         err = glGetError();
     }
+
+	update_fps();
+	long elapsed_ns = frame_end.tv_nsec - frame_start.tv_nsec;
+	return elapsed_ns;
 };
 
 Screen::operator bool(){

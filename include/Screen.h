@@ -9,7 +9,7 @@
 class Screen{
 	public:
 		Screen(std::shared_ptr<Chip8> chip8);
-		void render();
+		long render();
 		operator bool();
 		void close();
 		void clear();
