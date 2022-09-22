@@ -22,10 +22,10 @@ void Screen::handle_keys(int key, int action){
 void Screen::init(){
 	 float vertices[] = {
         // display rect     // texture coords
-         0.5f,  0.5f,	     1.0f, 1.0f, // top right
-         0.5f, -0.5f,	     1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f,	     0.0f, 0.0f, // bottom left
-        -0.5f,  0.5f,	     0.0f, 1.0f  // top left 
+         0.5f,  0.5f,	     1.0f, 0.0f,
+         0.5f, -0.5f,	     1.0f, 1.0f,
+        -0.5f, -0.5f,	     0.0f, 1.0f,
+        -0.5f,  0.5f,	     0.0f, 0.0f
     };
 
     unsigned int indices[] = {0, 1, 3, 1, 2, 3};
@@ -145,13 +145,10 @@ long Screen::render(){
 	clock_gettime(CLOCK_MONOTONIC, &frame_start);
 
 	const unsigned char * gfx = m_chip8->gfx();
-	unsigned char tmp[64 * 32] = {0};
+	unsigned char tmp[64 * 32];
+	memcpy(tmp, gfx, 64 * 32);
 	for(int i = 0; i < 32; i++){
-		for(int j = 0; j < 64; j++){
-			if(gfx[(i * 64) + j] != 0){
-				tmp[(i * 64) + j] = 255;
-			}
-		}
+		for(int j = 0; j < 64; j++) tmp[(i * 64) + j] *= 255;
 	}
 	update_texture(tmp);
 
