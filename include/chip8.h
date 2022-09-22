@@ -27,8 +27,14 @@ class Chip8{
 		void key_pressed(unsigned char key);
 		int m_wait_key = NO_KEY_WAIT;
 	private:
+		void handle_table0();
+		void opcode0x_00E0();
+		void opcode0x_00EE();
 		// adds the value of VY to VX, VF is set to 1 if there is a carry, or 0 if
-		// there isnt.
+		void opcode0x_1NNN();
+		void opcode0x_3XNN();
+		void opcode0x_4XNN();
+		void opcode0x_5XY0();
 		void opcode0x_7XNN(); // Adds NN to VX. (Carry flag is not changed);
 
 		void opcode0x_8XY0();

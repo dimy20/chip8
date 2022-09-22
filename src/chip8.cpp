@@ -63,7 +63,14 @@ void Chip8::init(){
 	memset(m_v, 0, sizeof(unsigned char) * REGISTERS_NUM);
 	memset(m_gfx, 0, sizeof(char) * (32 * 64));
 
+
+
+	m_global_table[0] = &Chip8::handle_table0;
+	m_global_table[1] = &Chip8::opcode0x_1NNN;
 	m_global_table[2] = &Chip8::opcode0x_2NNN;
+	m_global_table[3] = &Chip8::opcode0x_3XNN;
+	m_global_table[4] = &Chip8::opcode0x_4XNN;
+	m_global_table[5] = &Chip8::opcode0x_5XY0;
 	m_global_table[6] = &Chip8::opcode0x_6XNN;
 	m_global_table[7] = &Chip8::opcode0x_7XNN; // todo
 	m_global_table[8] = &Chip8::handle_arithmetic;
@@ -96,7 +103,19 @@ void Chip8::init(){
 	m_arithmetic_table[0x6] = &Chip8::opcode0x_8XY6;
 	m_arithmetic_table[0x7] = &Chip8::opcode0x_8XY7;
 	m_arithmetic_table[0xE] = &Chip8::opcode0x_8XYE;
+	//table0
+	m_table0[0x0] = &Chip8::opcode0x_00E0;
+	m_table0[0xE] = &Chip8::opcode0x_00EE;
+};
 
+void Chip8::handle_table0(){
+	const int key = (m_opcode & 0x000f);
+	if(m_table0.find(key) != m_table0.end()){
+		void (Chip8::* fn)(void) = m_table0[key];
+		(this->*fn)();
+	}else{
+		std::cerr << "Uknown table0 opcode " << key << std::endl;
+	}
 };
 
 void Chip8::load_program(const char * filename){
@@ -131,8 +150,14 @@ void Chip8::load_program(const char * filename){
 	m_memory[1025] = 0xC3;
 	m_memory[1026] = 0xFF;
 	
+void Chip8::opcode0x_00E0(){
+	memset(m_gfx, 0, ROWS * COLS * sizeof(unsigned char));
+	m_pc += 2;
 };
 
+void Chip8::opcode0x_00EE(){
+	m_pc = m_stack[--m_sp];
+};
 
 void Chip8::opcode0x_8XY0(){
 	const int r_x = (m_opcode & 0x0f00) >> 8;
@@ -241,7 +266,36 @@ void Chip8::opcode0x_2NNN(){
 	m_pc = m_opcode & 0x0FFF;
 };
 
+void Chip8::opcode0x_1NNN(){
+	const short addr = m_opcode & 0x0fff;
+	m_pc = addr;
+	//std::cout << "1NNN" << addr << std::endl;
+};
+
+void Chip8::opcode0x_3XNN(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	if(m_v[r_x] == (m_opcode & 0x00ff)) m_pc += 2;
+	m_pc += 2;
+	//std::cout << "3Xnn" << std::endl;
+};
+
+void Chip8::opcode0x_4XNN(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	if(m_v[r_x] != (m_opcode & 0x00ff)) m_pc += 2;
+	m_pc += 2;
+	//std::cout << "4Xnn" << std::endl;
+};
+
+void Chip8::opcode0x_5XY0(){
+	const int r_x = (m_opcode & 0x0f00) >> 8;
+	const int r_y = (m_opcode & 0x00f0) >> 4;
+	if(m_v[r_x] == m_v[r_y]) m_pc += 2;
+	m_pc += 2;
+	//std::cout << "5xy0" << std::endl;
+};
+
 void Chip8::opcode0x_6XNN(){
+	//std::cout << "6XNN" << std::endl;
 	unsigned int i = (m_opcode & 0x0F00) >> 8;
 	unsigned char value = m_opcode & 0x00ff;
 	assert(i <= REGISTERS_NUM - 1);
