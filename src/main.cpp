@@ -8,10 +8,15 @@
 #include "Shader.h"
 #include "Screen.h"
 
-int main(){
+int main(int argc, char ** argv){
+	if(argc < 2){
+		std::cerr << "Usage: chip8 [OPTIONS] rom" << std::endl;
+		return 1;
+	}
 
+	char * rom = argv[1];
 	std::shared_ptr<Chip8> chip = std::make_shared<Chip8>();
-	chip->load_program(nullptr);
+	if(!chip->load_program(rom)) return EXIT_FAILURE;
 	std::shared_ptr<Screen> screen = std::make_shared<Screen>(chip);
 
 	while(!glfwWindowShouldClose(screen->window())){
@@ -25,8 +30,6 @@ int main(){
 		long delta = (chip_elapsed_time - render_elapsed_time) / 1000;
 		if(delta > 0) usleep(delta);
 
-		int fps = screen->fps();
-		//if(fps > 0) std::cout << "FPS : " << fps << std::endl;
 		screen->swap_buffers();
 	 };
 	 screen->close();
