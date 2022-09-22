@@ -117,39 +117,32 @@ void Chip8::handle_table0(){
 		std::cerr << "Uknown table0 opcode " << key << std::endl;
 	}
 };
+bool Chip8::load_program(const char * filename){
+	assert(filename != nullptr);
 
-void Chip8::load_program(const char * filename){
-	m_memory[m_pc] = (0x6200 & 0xff00) >> 8;
-	m_memory[m_pc + 1] = (0x6200 & 0x00ff);
+	std::ifstream file(filename, std::ios::binary | std::ios::ate);
+	int size;
 
-	m_memory[m_pc + 2] = (0x6100 & 0xff00) >> 8;
-	m_memory[m_pc + 3] = (0x6100 & 0x00ff);
+	size = file.tellg();
+	if(size > (MEMORY_SIZE - LOAD_ADDRESS)){
+		std::cerr << "Rom " << filename << " is too big." << std::endl;
+		return false;
+	}
+	char * rom = static_cast<char*>(malloc(sizeof(char) * size));
+	if(!rom){
+		std::cerr << "failed to load Rom " << filename << std::endl;
+		return false;
+	}
 
-	// set i to sprite address
-	m_memory[m_pc + 4] = (0xa400 & 0xff00) >> 8;
-	m_memory[m_pc + 5] = (0xa400 & 0x00ff);
+	file.seekg(0, std::ios::beg);
+	file.read(rom, size);
 
-	m_memory[m_pc + 6] = (0xf60A & 0xff00) >> 8;
-	m_memory[m_pc + 7] = (0xd60A & 0x00ff);
+	// load
+	std::cout << "Loading rom " << filename << " ..." << std::endl;
+	memcpy(m_memory + LOAD_ADDRESS, rom, size);
+	return true;
+};
 
-	// draw sprite at (v[1],v[2]), 3 rows high
-	m_memory[m_pc + 8] = (0xd123 & 0xff00) >> 8;
-	m_memory[m_pc + 9] = (0xd123 & 0x00ff);
-
-	// store 255 in register 5
-	m_memory[m_pc + 10] = (0x65ff & 0xff00) >> 8;
-	m_memory[m_pc + 11] = (0x65ff & 0x00ff);
-
-	// set sound timer to value in register 5
-	m_memory[m_pc + 12] = (0xf518 & 0xff00) >> 8;
-	m_memory[m_pc + 13] = (0xf518 & 0x00ff);
-
-
-	// save sprite in memory
-	m_memory[1024] = 0x3C;
-	m_memory[1025] = 0xC3;
-	m_memory[1026] = 0xFF;
-	
 void Chip8::opcode0x_00E0(){
 	memset(m_gfx, 0, ROWS * COLS * sizeof(unsigned char));
 	m_pc += 2;

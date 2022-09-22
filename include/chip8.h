@@ -3,6 +3,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <memory>
+#include <fstream>
 
 #define MEMORY_SIZE 4096
 #define REGISTERS_NUM 16
@@ -21,7 +22,7 @@ class Chip8{
 		Chip8();
 		void init();
 		long emulate_cycles();
-		void load_program(const char * filename);
+		bool load_program(const char * filename);
 		unsigned char * gfx() { return m_gfx; };
 		unsigned char * keys() { return m_key; };
 		void key_pressed(unsigned char key);
@@ -99,7 +100,7 @@ class Chip8{
 		std::unordered_map<int, void (Chip8::*)(void)> m_arithmetic_table;
 		std::unordered_map<int, void (Chip8::*)(void)> m_timers_table;
 		std::unordered_map<int, void (Chip8::*)(void)> m_misc_table;
-
+		std::unordered_map<int, void (Chip8::*)(void)> m_table0;
 		bool m_interrupt = false;
 };
 
