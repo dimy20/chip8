@@ -253,7 +253,7 @@ void Chip8::opcode0x_CXNN(){
 };
 
 void Chip8::opcode0x_2NNN(){
-	m_stack[++m_sp] = m_pc;
+	m_stack[m_sp++] = m_pc + 2;
 	m_pc = m_opcode & 0x0FFF;
 };
 
@@ -286,7 +286,6 @@ void Chip8::opcode0x_5XY0(){
 };
 
 void Chip8::opcode0x_6XNN(){
-	//std::cout << "6XNN" << std::endl;
 	unsigned int i = (m_opcode & 0x0F00) >> 8;
 	unsigned char value = m_opcode & 0x00ff;
 	assert(i <= REGISTERS_NUM - 1);
@@ -326,13 +325,11 @@ void Chip8::opcode0x_FX15(){
 void Chip8::opcode0x_FX18(){
 	const int r_x = (m_opcode & 0x0f00) >> 8;
 	m_sound_timer = m_v[r_x];
-	std::cout << "setting sound timer to " << (int)m_v[r_x] << std::endl;
 	m_pc += 2;
 };
 
 void Chip8::opcode0x_FX0A(){
 	const int r_x = (m_opcode & 0x0f00) >> 8;
-	std::cout << "waiting key_press and storing in " << r_x << std::endl;
 	m_wait_key = r_x;
 	m_pc += 2;
 	m_interrupt = true;
@@ -353,21 +350,17 @@ void Chip8::opcode0x_FX29(){
 
 void Chip8::opcode0x_FX55(){
 	const int r_x = (m_opcode & 0x0f00) >> 8;
-	int j = 0;
-	while(j <= r_x){
-		m_memory[m_i++] = m_v[j++];
+	for(int i = 0; i <= r_x; i++){
+		m_memory[i + m_i] = m_v[i];
 	}
-	m_i -= r_x;
 	m_pc += 2;
 }
 
 void Chip8::opcode0x_FX65(){
 	const int r_x = (m_opcode & 0x0f00) >> 8;
-	int j = 0;
-	while(j <= r_x){
-		m_v[j++] = m_memory[m_i++];
+	for(int i = 0; i <= r_x; i++){
+		m_v[i] = m_memory[i + m_i];
 	}
-	m_i -= r_x;
 	m_pc += 2;
 };
 
@@ -375,9 +368,10 @@ void Chip8::opcode0x_FX33(){
 	const int r_x = (m_opcode & 0x0f00) >> 8;
 	m_memory[m_i] = m_v[r_x] / 100;
 	m_memory[m_i + 1] = (m_v[r_x] / 10) % 10;
-	m_memory[m_i + 2] = (m_v[r_x] % 100) % 10;
+	m_memory[m_i + 2] = (m_v[r_x] % 10);
 	m_pc += 2;
 };
+
 
 void Chip8::opcode0x_DXYN(){
 	const int r_x = (m_opcode & 0x0f00) >> 8;
