@@ -294,8 +294,8 @@ void Chip8::opcode0x_6XNN(){
 };
 
 void Chip8::handle_key_events(){
-	if(m_opcode & 0x000f == 0xe) opcode0x_EX9E();
-	if(m_opcode & 0x000f == 0x1) opcode0x_EXA1();
+	if((m_opcode & 0x000f) == 0xe) opcode0x_EX9E();
+	if((m_opcode & 0x000f) == 0x1) opcode0x_EXA1();
 };
 
 void Chip8::opcode0x_EX9E(){
@@ -380,17 +380,16 @@ void Chip8::opcode0x_DXYN(){
 	int y = m_v[r_y];
 	int n = (m_opcode & 0x000f);
 	m_v[0xf] = 0;
-	// each row-bytes is a bitmap of wich pixel should be drawn
-	for(int row = 0; row < n; row++){
-		unsigned char byte = m_memory[m_i + row];
+
+	// each row-byte is a bitmap of wich pixel should be drawn
+	for(int row = 0; row < n && (row + y) < 32;  row++){
+		unsigned char byte = m_memory[m_i + row]; // sprite
 		for(int bit_index = 0; bit_index < 8; bit_index++){
-			unsigned char bit_value = (byte >> bit_index) & 0x1;
-			unsigned char * curr_pixel;
-			curr_pixel = &m_gfx[((row + y) * 64) + (x + bit_index)];
-			// collision ?
-			if(bit_value == 1 && *curr_pixel == 1) m_v[0xf] = 1;
-			//draw
-			*curr_pixel ^= bit_value;
+			if(((byte >> (7 - bit_index)) & 1) == 1){
+				if(m_gfx[((row + y) * 64) + (x + bit_index) % 2048] == 1)	
+					m_v[0xf] = 1;
+				m_gfx[((row + y) * 64) + (x + bit_index) % 2048] ^= 1;
+			}
 		}
 	};
 	m_pc += 2;
@@ -409,7 +408,7 @@ long Chip8::emulate_cycles(){
 				void (Chip8::* tmp)(void) = m_global_table[key];
 				(this->*tmp)();
 			}else{
-				//std::cerr << "Unknown opcode [0X0000]: " << m_opcode << std::endl;
+				std::cerr << "Unknown opcode [0X0000]: " << m_opcode << std::endl;
 			}
 			if(m_interrupt) break;
 		}
