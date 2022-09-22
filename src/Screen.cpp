@@ -7,7 +7,6 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods){
 void Screen::handle_keys(int key, int action){
 	if(m_key_map.find(key) != m_key_map.end()){
 		if(action == GLFW_PRESS && m_chip8->m_wait_key != NO_KEY_WAIT){
-			std::cout << (int)m_key_map[key] << " pressed " << std::endl;
 			m_chip8->key_pressed(m_key_map[key]);
 			m_chip8->m_wait_key = NO_KEY_WAIT;
 		}
@@ -15,7 +14,7 @@ void Screen::handle_keys(int key, int action){
 		// store state
 		int key_index = m_key_map[key];
 		unsigned char * keys = m_chip8->keys();
-		keys[key_index] = (action == GLFW_PRESS || GLFW_REPEAT) ? 1 : 0;
+		keys[key_index] = (action == GLFW_PRESS || action == GLFW_REPEAT) ? 1 : 0;
 	}
 
 };
