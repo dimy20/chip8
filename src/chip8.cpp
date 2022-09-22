@@ -238,11 +238,10 @@ void Chip8::opcode0x_7XNN(){
 void Chip8::opcode0x_ANNN(){
 	m_i = m_opcode & 0x0fff;
 	m_pc += 2;
-	std::cout << "Setting index to " << m_i << std::endl;
 };
 
 void Chip8::opcode0x_BNNN(){
-	const char addr = (m_opcode & 0x0fff);
+	const short addr = (m_opcode & 0x0fff);
 	m_pc = m_v[0x0] + addr;
 };
 
