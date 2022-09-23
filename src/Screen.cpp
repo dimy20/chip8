@@ -86,8 +86,8 @@ void Screen::init_window(){
 
 Screen::Screen(std::shared_ptr<Chip8> chip) : m_chip8(chip) {
 	init_window();
-	const char * vertex = "../shaders/vert.glsl";
-	const char * frag = "../shaders/frag.glsl";
+	const char * vertex = "/etc/chip8/shaders/vert.glsl";
+	const char * frag = "/etc/chip8/shaders/frag.glsl";
 	m_shader = std::make_shared<Shader>(vertex, frag);
 	init();
 	init_texture(64, 32, chip->gfx());
