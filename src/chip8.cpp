@@ -27,7 +27,7 @@ void Chip8::handle_arithmetic(){
 		void (Chip8::* fn)(void) = m_arithmetic_table[key];
 		(this->*fn)();
 	}else{
-		std::cerr << "Uknown arithmetic opcode " << key << std::endl;
+		CHIP8_LOG("Unknown misc opcode " << m_opcode);
 	}
 };
 
@@ -38,19 +38,19 @@ void Chip8::handle_misc_and_timers(){
 			void (Chip8::* fn)(void) = m_timers_table[key];
 			(this->*fn)();
 		}else{
-			std::cerr << "Uknown timer opcode " << key << std::endl;
+			CHIP8_LOG("Unknown misc opcode " << m_opcode);
 		}
 	}else{
 		if(m_misc_table.find(key) != m_misc_table.end()){
 			void (Chip8::* fn)(void) = m_misc_table[key];
 			(this->*fn)();
 		}else{
-			std::cerr << "Unknown misc opcode " << m_opcode << std::endl;
+			CHIP8_LOG("Unknown misc opcode " << m_opcode);
 		}
 	}
 }
 
-Chip8::Chip8(){ init(); };
+Chip8::Chip8(long clock_speed) : m_clock_speed(clock_speed){ init(); };
 
 void Chip8::init(){
 	m_pc = 0x0200;
@@ -114,7 +114,7 @@ void Chip8::handle_table0(){
 		void (Chip8::* fn)(void) = m_table0[key];
 		(this->*fn)();
 	}else{
-		std::cerr << "Uknown table0 opcode " << key << std::endl;
+		CHIP8_LOG("Uknown opcode " << m_opcode);
 	}
 };
 bool Chip8::load_program(const char * filename){
@@ -125,12 +125,12 @@ bool Chip8::load_program(const char * filename){
 
 	size = file.tellg();
 	if(size > (MEMORY_SIZE - LOAD_ADDRESS)){
-		std::cerr << "Rom " << filename << " is too big." << std::endl;
+		CHIP8_LOG("Rom " << filename << " is too big.");
 		return false;
 	}
 	char * rom = static_cast<char*>(malloc(sizeof(char) * size));
 	if(!rom){
-		std::cerr << "failed to load Rom " << filename << std::endl;
+		CHIP8_LOG("Failed to load rom" << filename);
 		return false;
 	}
 
@@ -138,7 +138,7 @@ bool Chip8::load_program(const char * filename){
 	file.read(rom, size);
 
 	// load
-	std::cout << "Loading rom " << filename << " ..." << std::endl;
+	CHIP8_LOG("Loading rom " << filename);
 	memcpy(m_memory + LOAD_ADDRESS, rom, size);
 	return true;
 };
@@ -260,21 +260,18 @@ void Chip8::opcode0x_2NNN(){
 void Chip8::opcode0x_1NNN(){
 	const short addr = m_opcode & 0x0fff;
 	m_pc = addr;
-	//std::cout << "1NNN" << addr << std::endl;
 };
 
 void Chip8::opcode0x_3XNN(){
 	const int r_x = (m_opcode & 0x0f00) >> 8;
 	if(m_v[r_x] == (m_opcode & 0x00ff)) m_pc += 2;
 	m_pc += 2;
-	//std::cout << "3Xnn" << std::endl;
 };
 
 void Chip8::opcode0x_4XNN(){
 	const int r_x = (m_opcode & 0x0f00) >> 8;
 	if(m_v[r_x] != (m_opcode & 0x00ff)) m_pc += 2;
 	m_pc += 2;
-	//std::cout << "4Xnn" << std::endl;
 };
 
 void Chip8::opcode0x_5XY0(){
@@ -282,7 +279,6 @@ void Chip8::opcode0x_5XY0(){
 	const int r_y = (m_opcode & 0x00f0) >> 4;
 	if(m_v[r_x] == m_v[r_y]) m_pc += 2;
 	m_pc += 2;
-	//std::cout << "5xy0" << std::endl;
 };
 
 void Chip8::opcode0x_6XNN(){
@@ -386,9 +382,9 @@ void Chip8::opcode0x_DXYN(){
 		unsigned char byte = m_memory[m_i + row]; // sprite
 		for(int bit_index = 0; bit_index < 8; bit_index++){
 			if(((byte >> (7 - bit_index)) & 1) == 1){
-				if(m_gfx[((row + y) * 64) + (x + bit_index) % 2048] == 1)	
+				if(m_gfx[(((row + y) * 64) + (x + bit_index)) % 2048] == 1)	
 					m_v[0xf] = 1;
-				m_gfx[((row + y) * 64) + (x + bit_index) % 2048] ^= 1;
+				m_gfx[(((row + y) * 64) + (x + bit_index)) % 2048] ^= 1;
 			}
 		}
 	};
@@ -396,8 +392,8 @@ void Chip8::opcode0x_DXYN(){
 	m_interrupt = true;
 };
 
-long Chip8::emulate_cycles(){
-	int n = CYCLES_PER_FRAME;
+long Chip8::emulate_cycles(int fps){
+	int n = (m_clock_speed / fps); // cycles per frame
 	int i = 0;
 	if(m_wait_key == NO_KEY_WAIT){
 		for(; i < n; i++){
@@ -408,18 +404,18 @@ long Chip8::emulate_cycles(){
 				void (Chip8::* tmp)(void) = m_global_table[key];
 				(this->*tmp)();
 			}else{
-				std::cerr << "Unknown opcode [0X0000]: " << m_opcode << std::endl;
+				CHIP8_LOG("Unknown opcode " << m_opcode);
 			}
 			if(m_interrupt) break;
 		}
 	}
 	m_interrupt = false;
 	if(m_delay_timer > 0) m_delay_timer--;
-	if(m_sound_timer > 0 && --m_sound_timer == 0) std::cout << "BEEP!" << std::endl;
+	if(m_sound_timer > 0 && --m_sound_timer == 0) CHIP8_LOG("BEEP!");
 
 	// how long do these cycles take in chip time?
 	const long sec_ns = (1000 * 1000 * 1000);
-	long elapsed_time = (i * sec_ns) / CHIP_CLOCK_SPEED;
+	long elapsed_time = (i * sec_ns) / m_clock_speed;
 	return elapsed_time;
 }
 

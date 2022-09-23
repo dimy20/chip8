@@ -51,7 +51,7 @@ void Screen::init(){
 
     while (err != GL_NO_ERROR)
     {
-		std::cerr << "OpenGL error: " << err << " "<< std::endl;
+		CHIP8_LOG("Opengl error: " << err);
         err = glGetError();
     }
 
@@ -79,7 +79,7 @@ void Screen::init_window(){
 
     while (err != GL_NO_ERROR)
     {
-		std::cerr << "OpenGL error: " << err << " "<< std::endl;
+		CHIP8_LOG("Opengl error: " << err);
         err = glGetError();
     }
 }
@@ -129,7 +129,7 @@ void Screen::init_texture(int w, int h, unsigned char * data){
 
     while (err != GL_NO_ERROR)
     {
-		std::cerr << "OpenGL error: " << err << " "<< std::endl;
+		CHIP8_LOG("Opengl error: " << err);
         err = glGetError();
     }
 };
@@ -165,7 +165,7 @@ long Screen::render(){
 
     while (err != GL_NO_ERROR)
     {
-		std::cerr << "OpenGL error: " << err << " "<< std::endl;
+		CHIP8_LOG("Opengl error: " << err);
         err = glGetError();
     }
 

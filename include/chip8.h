@@ -16,12 +16,13 @@
 #define CHIP_CLOCK_SPEED 500
 #define CYCLES_PER_FRAME 8
 #define CHIP_NS_PER_FRAME 16000000
+#define CHIP8_LOG(s) std::cout << s << std::endl
 
 class Chip8{
 	public:
-		Chip8();
+		Chip8(long clock_speed = CHIP_CLOCK_SPEED);
 		void init();
-		long emulate_cycles();
+		long emulate_cycles(int fps);
 		bool load_program(const char * filename);
 		unsigned char * gfx() { return m_gfx; };
 		unsigned char * keys() { return m_key; };
@@ -102,5 +103,6 @@ class Chip8{
 		std::unordered_map<int, void (Chip8::*)(void)> m_misc_table;
 		std::unordered_map<int, void (Chip8::*)(void)> m_table0;
 		bool m_interrupt = false;
+		long m_clock_speed;
 };
 
